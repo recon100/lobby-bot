@@ -17,7 +17,7 @@ async function main() {
 	}
 
 	mongoose.Promise = global.Promise;
-	await mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost/catapult-slack-bot');
+	await mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost/catapult-lobby-bot');
 
 	const app = new Koa();
 	app.keys = ['9rvjNNd', 'eDToNlNE', 'U4Nit1QD']; // For sign cookies

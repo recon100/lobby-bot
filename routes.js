@@ -75,7 +75,7 @@ router.post('/slack/messageActions', async ctx => {
 			const phoneNumber = data.value;
 			let chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber});
 			if (!chat) {
-				const {body} = await slack('groups.create').send({name: phoneNumber});
+				const {body} = await slack('groups.create', app.slack.token).send({name: phoneNumber});
 				const channel = {id: body.group.id, name: body.group.name};
 				chat = new ctx.models.PrivateChat({
 					application: app.id,
@@ -88,7 +88,7 @@ router.post('/slack/messageActions', async ctx => {
 			}
 			chat.state = 'opened';
 			await chat.save();
-			await slack('groups.invite').send({channel: chat.channel.id, user: data.user});
+			await slack('groups.invite', app.slack.token).send({channel: chat.channel.id, user: data.user});
 			await chat.sendIncomingMessage({text: data.text}); // Copy this message to private channel
 			await send({
 				replace_original: true,
