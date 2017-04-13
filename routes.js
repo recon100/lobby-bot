@@ -1,30 +1,9 @@
 const Router = require('koa-router');
 const superagent = require('superagent');
 const debug = require('debug')('routes');
+const slack = require('./slack');
 
 const router = new Router();
-
-async function getUserPhoneNumber(app, user) {
-	if (user.startsWith('<@')) {
-		// User name is given
-		// Try to get phone number
-		try {
-			const list = user.substr(2).split('|');
-			const id = list[0];
-			const data = (await superagent.get('https://slack.com/api/users.info')
-				.query({token: app.slack.token, user: id})).body;
-			const phone = data.user.profile.phone;
-			if (phone) {
-				return phone;
-			}
-			throw new Error(`Missing phone number in profile of ${data.user.name}`);
-		} catch (err) {
-			debug(err.message);
-			throw new Error(`Couldn't get phone number for ${user}. Please try to use phone number directly.`);
-		}
-	}
-	return user;
-}
 
 async function getSlackOAuthSessionData(ctx) {
 	const sessionId = ctx.request.query.sid || ctx.request.body.sid;
@@ -46,14 +25,30 @@ router.post('/callback', async ctx => {
 					}
 					debug(`${ev.from} ->: ${ev.text}`);
 					// Redirect incoming message to Slack
-					await app.sendMessageToSlack({
-						text: `_${ev.from}:_`,
-						mrkdwn: true,
-						attachment_type: 'default',
-						attachments: [{
-							text: ev.text
-						}]
-					});
+					const chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber: ev.from, state: 'opened'});
+					if (chat) {
+						await chat.sendIncomingMessage({text: ev.text});
+					} else {
+						const message = {
+							text: ev.text,
+							username: ev.from,
+							attachments: [
+								{
+									text: '',
+									attachment_type: 'default',
+									actions: [
+										{
+											name: 'chat',
+											text: 'Chat',
+											type: 'button',
+											value: ev.from
+										}
+									]
+								}
+							]
+						};
+						await app.sendMessageToSlack(message);
+					}
 				}
 				break;
 			}
@@ -66,42 +61,46 @@ router.post('/callback', async ctx => {
 	}
 });
 
-router.post('/slack/commands', async ctx => {
-	const ev = ctx.request.body;
-	debug(ev);
+router.post('/slack/messageActions', async ctx => {
+	const data = ctx.request.body;
+	debug(data);
 	ctx.body = '';
-	if (ev.token !== ctx.slackAuth.verificationToken) {
-		return;
-	}
-	const sendResponse = text => superagent.post(ev.response_url).send({text, mrkdwn: true}).type('json');
-	const app = await ctx.models.Application.findOne({'slack.teamId': ev.team_id});
+	const app = await ctx.models.Application.findOne({'slack.teamId': data.team_id, 'slack.token': data.token});
 	if (!app) {
-		return;
+		return ctx.throw(404);
 	}
-	try {
-		switch (ev.command) {
-			case '/sms': {
-				const index = ev.text.indexOf(' ');
-				if (index >= 0) {
-					const to = await getUserPhoneNumber(app, ev.text.substr(0, index).trim());
-					const message = {
-						from: app.catapult.phoneNumber,
-						to,
-						text: ev.text.substr(index + 1).trim()
-					};
-					debug('Sending a SMS to %s: %j', to, message);
-					await app.sendMessageToCatapult(message);
-					await sendResponse(`Sent _${message.text}_ to _${message.to}_`);
-				}
-				break;
+	const send = r => superagent.post(data.response_url).send(r);
+	if (data.name === 'chat') {
+		const handler = async function () {
+			const phoneNumber = data.value;
+			let chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber});
+			if (!chat) {
+				const {body} = await slack('groups.create').send({name: phoneNumber});
+				const channel = {id: body.group.id, name: body.group.name};
+				chat = new ctx.models.PrivateChat({
+					application: app.id,
+					phoneNumber,
+					channel
+				});
 			}
-			default:
-				debug('Unknown command %s', ev.command);
-				break;
-		}
-	} catch (err) {
-		debug(err);
-		await sendResponse(`_Error: ${err.message}_`);
+			if (chat.state !== 'closed') {
+				throw new Error('Somebody is already talking with this number');
+			}
+			chat.state = 'opened';
+			await chat.save();
+			await slack('groups.invite').send({channel: chat.channel.id, user: data.user});
+			await chat.sendIncomingMessage({text: data.text}); // Copy this message to private channel
+			await send({
+				replace_original: true,
+				text: `Go to private channel ${chat.channelname} to continue conversation`
+			});
+		};
+		// Send response at once
+		handler().catch(err => send({
+			response_type: 'ephemeral',
+			replace_original: true,
+			text: err.message
+		}));
 	}
 });
 

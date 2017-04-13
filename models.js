@@ -2,6 +2,7 @@ const Catapult = require('node-bandwidth');
 const mongoose = require('mongoose');
 const superagent = require('superagent');
 const debug = require('debug')('models');
+const slack = require('./slack');
 
 const CATAPULT_APPLICATION_NAME = 'Lobby Slack Bot';
 
@@ -19,7 +20,7 @@ const ApplicationSchema = new mongoose.Schema({
 	},
 	slack: {
 		type: {
-			token: {type: String, required: true},
+			token: {type: String, required: true, index: true},
 			teamName: {type: String, required: true},
 			teamId: {type: String, required: true, index: true},
 			incomingWebhookUrl: {type: String, required: true},
@@ -84,7 +85,27 @@ const SlackOAuthSessionSchema = new mongoose.Schema({
 
 Application = mongoose.model('Application', ApplicationSchema);
 
+const PrivateChatSchema = new mongoose.Schema({
+	phoneNumber: {type: String, required: true, index: true},
+	application: {type: mongoose.Schema.Types.ObjectId, ref: 'Application', index: true},
+	channel: {
+		type: {
+			name: {type: String, required: true},
+			id: {type: String, required: true, index: true}
+		}, required: true
+	},
+	state: {type: String, required: true, default: 'closed', index: true}
+});
+
+PrivateChatSchema.methods.sendIncomingMessage = async function (message) {
+	if (!this.application.slack) {
+		this.application = await Application.findById(this.application);
+	}
+	return slack('chat.postMessage', this.application.slack.token).send({channel: this.channel.id, username: this.phoneNumber}).send(message);
+};
+
 module.exports = {
 	Application,
-	SlackOAuthSession: mongoose.model('SlackOAuthSession', SlackOAuthSessionSchema)
+	SlackOAuthSession: mongoose.model('SlackOAuthSession', SlackOAuthSessionSchema),
+	PrivateChat: mongoose.model('PrivateChat', PrivateChatSchema)
 };
