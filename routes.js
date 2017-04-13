@@ -11,6 +11,29 @@ async function getSlackOAuthSessionData(ctx) {
 	return session.data;
 }
 
+async function slackMiddleware(ctx, next) {
+	const data = ctx.request.body;
+	debug(data);
+	ctx.body = '';
+	if (data.token !== ctx.slackAuth.verificationToken) {
+		debug(`Invalid token value ${data.token} (estimated ${ctx.slackAuth.verificationToken})`);
+		return;
+	}
+	ctx.sendResponse = r => superagent.post(data.response_url).send(r).type('json');
+	const app = await ctx.models.Application.findOne({'slack.teamId': data.team_id});
+	if (!app) {
+		debug(`Missing application data for team ${data.team_id}`);
+		return;
+	}
+	ctx.application = app;
+	ctx.runAsync = action => action().catch(err => ctx.sendResponse({
+		response_type: 'ephemeral',
+		replace_original: true,
+		text: err.message
+	}));
+	await next();
+}
+
 router.post('/callback', async ctx => {
 	const ev = ctx.request.body;
 	debug(ev);
@@ -61,21 +84,21 @@ router.post('/callback', async ctx => {
 	}
 });
 
-router.post('/slack/messageActions', async ctx => {
+router.post('/slack/messageActions', slackMiddleware, async ctx => {
 	const data = ctx.request.body;
-	debug(data);
-	ctx.body = '';
-	const app = await ctx.models.Application.findOne({'slack.teamId': data.team_id, 'slack.token': data.token});
-	if (!app) {
-		return ctx.throw(404);
-	}
-	const send = r => superagent.post(data.response_url).send(r);
-	if (data.name === 'chat') {
-		const handler = async function () {
+	const app = ctx.application;
+	ctx.runAsync(async () => {
+		if (data.name === 'chat') {
 			const phoneNumber = data.value;
 			let chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber});
-			if (!chat) {
-				const {body} = await slack('groups.create', app.slack.token).send({name: phoneNumber});
+			if (chat) {
+				// Hide previous chat
+				const {body} = await slack('groups.createChild', app.slack.token).send({name: chat.channel.id});
+				chat.channel.id = body.group.id;
+				chat.channel.name = body.group.name;
+			} else 	{
+				// Create new private chat with phone number
+				const {body} = await slack('groups.create', app.slack.token).send({channel: phoneNumber});
 				const channel = {id: body.group.id, name: body.group.name};
 				chat = new ctx.models.PrivateChat({
 					application: app.id,
@@ -90,19 +113,32 @@ router.post('/slack/messageActions', async ctx => {
 			await chat.save();
 			await slack('groups.invite', app.slack.token).send({channel: chat.channel.id, user: data.user});
 			await chat.sendIncomingMessage({text: data.text}); // Copy this message to private channel
-			await send({
+			await ctx.sendResponse({
 				replace_original: true,
-				text: `Go to private channel ${chat.channelname} to continue conversation`
+				text: `Go to private channel ${chat.channel.name} to continue conversation`
 			});
-		};
-		// Send response at once
-		handler().catch(err => send({
-			response_type: 'ephemeral',
-			replace_original: true,
-			text: err.message
-		}));
-	}
+		}
+	});
 });
+
+router.post('/slack/commands', slackMiddleware, async ctx => {
+	const data = ctx.request.body;
+	const app = ctx.application;
+	ctx.runAsync(async () => {
+		if (data.command === '/close') {
+			const chat = await ctx.models.PrivateChat.findOne({application: app.id, 'channel.id': data.channel_id, state: 'opened'});
+			if (chat) {
+				chat.state = 'closed';
+				await chat.save();
+				await ctx.sendResponse({
+					replace_original: true,
+					text: 'Conversation has been completed. Thank you.'
+				});
+			}
+		}
+	});
+});
+
 
 router.get('/slack/oauth2/callback', async ctx => {
 	const host = ctx.request.host;
