@@ -101,7 +101,8 @@ PrivateChatSchema.methods.sendIncomingMessage = async function (message) {
 	if (!this.application.slack) {
 		this.application = await Application.findById(this.application);
 	}
-	return slack('chat.postMessage', this.application.slack.token).send({channel: this.channel.id, username: this.phoneNumber}).send(message);
+	return slack('chat.postMessage', this.application.slack.token,
+		Object.assign({channel: this.channel.id, username: this.phoneNumber}, message));
 };
 
 module.exports = {

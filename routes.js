@@ -93,13 +93,13 @@ router.post('/slack/messageActions', slackMiddleware, async ctx => {
 			let chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber});
 			if (chat) {
 				// Hide previous chat
-				const {body} = await slack('groups.createChild', app.slack.token).send({name: chat.channel.id});
-				chat.channel.id = body.group.id;
-				chat.channel.name = body.group.name;
+				const {group} = await slack('groups.createChild', app.slack.token, {name: chat.channel.id});
+				chat.channel.id = group.id;
+				chat.channel.name = group.name;
 			} else 	{
 				// Create new private chat with phone number
-				const {body} = await slack('groups.create', app.slack.token).send({channel: phoneNumber});
-				const channel = {id: body.group.id, name: body.group.name};
+				const {group} = await slack('groups.create', app.slack.token, {channel: phoneNumber});
+				const channel = {id: group.id, name: group.name};
 				chat = new ctx.models.PrivateChat({
 					application: app.id,
 					phoneNumber,
@@ -111,7 +111,7 @@ router.post('/slack/messageActions', slackMiddleware, async ctx => {
 			}
 			chat.state = 'opened';
 			await chat.save();
-			await slack('groups.invite', app.slack.token).send({channel: chat.channel.id, user: data.user});
+			await slack('groups.invite', app.slack.token, {channel: chat.channel.id, user: data.user});
 			await chat.sendIncomingMessage({text: data.text}); // Copy this message to private channel
 			await ctx.sendResponse({
 				replace_original: true,
@@ -138,7 +138,6 @@ router.post('/slack/commands', slackMiddleware, async ctx => {
 		}
 	});
 });
-
 
 router.get('/slack/oauth2/callback', async ctx => {
 	const host = ctx.request.host;
