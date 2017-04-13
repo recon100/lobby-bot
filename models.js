@@ -70,7 +70,8 @@ ApplicationSchema.statics.createApplication = async function (host, userId, apiT
 };
 
 ApplicationSchema.methods.sendMessageToSlack = function (message) {
-	return superagent.post(this.slack.incomingWebhookUrl).send(message).type('json');
+	return slack('chat.postMessage', this.slack.token,
+		Object.assign({channel: this.slack.channel}, message));
 };
 
 ApplicationSchema.methods.sendMessageToCatapult = function (message) {
