@@ -1,0 +1,58 @@
+{
+	"name": "lobby-bot",
+	"version": "1.0.0",
+	"description": "Slack bot for lobby",
+	"main": "index.js",
+	"repository": "https://github.com/BandwidthExamples/lobby-bot",
+	"author": "avbel",
+	"license": "MIT",
+	"engines": {
+		"node": ">=7.6"
+	},
+	"scripts": {
+		"start": "node --harmony index.js",
+		"lint": "xo",
+		"test": "npm run lint && ava"
+	},
+	"xo": {
+		"esnext": true,
+		"envs": [
+			"node"
+		],
+		"rules": {
+			"camelcase": [
+				2,
+				{
+					"properties": "never"
+				}
+			],
+			"max-params": [
+				"error",
+				5
+			],
+			"max-nested-callbacks": [
+				"error",
+				5
+			]
+		},
+		"settings": {
+			"import/resolver": "node"
+		}
+	},
+	"devDependencies": {
+		"ava": "^0.19",
+		"cross-env": "^4.0",
+		"xo": "^0.18"
+	},
+	"dependencies": {
+		"debug": "^2.6",
+		"koa": "^2.0",
+		"koa-body": "^2.0",
+		"koa-router": "^7.0",
+		"koa-views": "^5.2",
+		"mongoose": "^4.8",
+		"node-bandwidth": "^2.3",
+		"pug": "^2.0.",
+		"superagent": "^3.4"
+	}
+}

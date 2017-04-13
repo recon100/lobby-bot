@@ -1,0 +1,9 @@
+extends layout.pug
+
+block content
+	p= 'Your phone number is '
+		i #{phoneNumber}
+		span .
+	p= 'Send SMS to this number to receive it in Slack channel '
+		i #{channel}.
+	p This number will be used for sending messages by Slack too
