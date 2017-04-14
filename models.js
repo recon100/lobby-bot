@@ -1,6 +1,5 @@
 const Catapult = require('node-bandwidth');
 const mongoose = require('mongoose');
-const superagent = require('superagent');
 const debug = require('debug')('models');
 const slack = require('./slack');
 

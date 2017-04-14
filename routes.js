@@ -54,9 +54,7 @@ router.post('/callback', async ctx => {
 					debug(`${ev.from} ->: ${ev.text}`);
 					// Redirect incoming message to Slack
 					const chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber: ev.from, state: 'opened'});
-					if (chat) {
-						await chat.sendIncomingMessage({text: ev.text});
-					} else {
+					const sendMessageToCommonChannel = async () => {
 						const message = {
 							text: ev.text,
 							username: ev.from,
@@ -77,6 +75,21 @@ router.post('/callback', async ctx => {
 							]
 						};
 						await app.sendMessageToSlack(message);
+					};
+					if (chat) {
+						try {
+							await chat.sendIncomingMessage({text: ev.text});
+						} catch (err) {
+							if (err.message === 'is_archived') {
+								chat.state = 'closed';
+								await chat.save();
+								await sendMessageToCommonChannel();
+							} else {
+								throw err;
+							}
+						}
+					} else {
+						await sendMessageToCommonChannel();
 					}
 				}
 				break;
