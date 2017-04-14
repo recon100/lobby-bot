@@ -22,7 +22,6 @@ const ApplicationSchema = new mongoose.Schema({
 			token: {type: String, required: true, index: true},
 			teamName: {type: String, required: true},
 			teamId: {type: String, required: true, index: true},
-			incomingWebhookUrl: {type: String, required: true},
 			channel: {type: String, required: true}
 		}, required: true
 	},
@@ -60,7 +59,6 @@ ApplicationSchema.statics.createApplication = async function (host, userId, apiT
 		token: slack.access_token,
 		teamName: slack.team_name,
 		teamId: slack.team_id,
-		incomingWebhookUrl: slack.incoming_webhook.url,
 		channel: slack.incoming_webhook.channel
 	};
 	await Application.collection.remove({'catapult.applicationId': applicationId});
