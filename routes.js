@@ -160,7 +160,6 @@ router.post('/slack/events', async ctx => {
 		}
 		case 'event_callback': {
 			slackMiddleware(ctx, async () => {
-				ctx.body = '';
 				handleSlackEvent(data.event, ctx);
 			}).catch(err => debug(err.message));
 			break;
@@ -178,7 +177,7 @@ async function handleSlackEvent(ev, ctx) {
 		if (chat) {
 			chat.lastMessageTime = Date.now();
 			await chat.save();
-			if (app.userId !== ev.user) {
+			if (ev.subtype !== 'bot_message') {
 				// Send answer back to user
 				debug(`Sending SMS to ${chat.phoneNumber}`);
 				await app.sendMessageToCatapult({
