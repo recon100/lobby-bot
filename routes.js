@@ -70,7 +70,7 @@ router.post('/callback', async ctx => {
 									actions: [
 										{
 											name: 'chat',
-											text: 'Chat',
+											text: 'Answer',
 											type: 'button',
 											value: `${ev.from}:${Buffer.from(ev.text).toString('base64')}`
 										}
@@ -159,9 +159,7 @@ router.post('/slack/events', async ctx => {
 			break;
 		}
 		case 'event_callback': {
-			slackMiddleware(ctx, async () => {
-				handleSlackEvent(data.event, ctx);
-			}).catch(err => debug(err.message));
+			slackMiddleware(ctx, () => handleSlackEvent(data.event, ctx)).catch(err => debug(err.message));
 			break;
 		}
 		default: {
