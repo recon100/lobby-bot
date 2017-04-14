@@ -46,4 +46,4 @@ if (!module.parent) {
 
 module.exports = main;
 
-// Link to Slack app https://slack.com/oauth/pick?scope=incoming-webhook%2Ccommands%2Cchat:write:bot%2Cgroups:write%2Cgroups:read&client_id=<client-id>
+// Link to Slack app https://slack.com/oauth/pick?scope=incoming-webhook%2Ccommands%2Cchat:write:bot%2Cgroups:read%2Cgroups:write%2Cgroups:history&client_id=<client-id>

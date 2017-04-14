@@ -54,7 +54,11 @@ router.post('/callback', async ctx => {
 					debug(`${ev.from} ->: ${ev.text}`);
 					// Redirect incoming message to Slack
 					const chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber: ev.from, state: 'opened'});
-					const sendMessageToCommonChannel = async () => {
+					if (chat) {
+						// Send message to private number's channel
+						await chat.sendIncomingMessage({text: ev.text});
+					} else {
+						// Send message to common channel
 						const message = {
 							text: ev.text,
 							username: ev.from,
@@ -75,21 +79,6 @@ router.post('/callback', async ctx => {
 							]
 						};
 						await app.sendMessageToSlack(message);
-					};
-					if (chat) {
-						try {
-							await chat.sendIncomingMessage({text: ev.text});
-						} catch (err) {
-							if (err.message === 'is_archived') {
-								chat.state = 'closed';
-								await chat.save();
-								await sendMessageToCommonChannel();
-							} else {
-								throw err;
-							}
-						}
-					} else {
-						await sendMessageToCommonChannel();
 					}
 				}
 				break;
@@ -111,14 +100,14 @@ router.post('/slack/messageActions', slackMiddleware, async ctx => {
 			const phoneNumber = items[0];
 			const text = Buffer.from(items[1], 'base64').toString('utf-8');
 			let chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber});
-			if (chat) {
-				// Hide previous chat
-				const {group} = await slack('groups.createChild', app.slack.token, {channel: chat.channel.id});
-				chat.channel.id = group.id;
-				chat.channel.name = group.name;
-			} else 	{
-				// Create new private chat with phone number
-				const {group} = await slack('groups.create', app.slack.token, {name: phoneNumber.substr(1)});
+			if (!chat) {
+				// Create new or reuse existing private chat with phone number
+				const name = phoneNumber.substr(1);
+				const {groups} = await slack('groups.list', app.slack.token);
+				let group = groups.filter(g => g.name === name)[0];
+				if (!group) {
+					group = (await slack('groups.create', app.slack.token, {name})).group;
+				}
 				const channel = {id: group.id, name: group.name};
 				chat = new ctx.models.PrivateChat({
 					application: app.id,
@@ -157,6 +146,50 @@ router.post('/slack/commands', slackMiddleware, async ctx => {
 		}
 	});
 });
+
+router.post('/slack/events', async ctx => {
+	const data = ctx.request.body;
+	switch (data.type) {
+		case 'url_verification': {
+			if (data.token !== ctx.slackAuth.verificationToken) {
+				debug(`Invalid token value ${data.token} (estimated ${ctx.slackAuth.verificationToken})`);
+				return ctx.throw(404);
+			}
+			ctx.body = {challenge: data.challenge};
+			break;
+		}
+		case 'event_callback': {
+			slackMiddleware(ctx, async () => {
+				ctx.body = '';
+				handleSlackEvent(data.event, ctx);
+			}).catch(err => debug(err.message));
+			break;
+		}
+		default: {
+			debug(`Unknown event "${data.type}"`);
+		}
+	}
+});
+
+async function handleSlackEvent(ev, ctx) {
+	const app = ctx.application;
+	if (ev.type === 'message') {
+		const chat = await ctx.models.PrivateChat.findOne({application: app.id, 'channel.id': ev.channel, state: 'opened'});
+		if (chat) {
+			chat.lastMessageTime = Date.now();
+			await chat.save();
+			if (app.userId !== ev.user) {
+				// Send answer back to user
+				debug(`Sending SMS to ${chat.phoneNumber}`);
+				await app.sendMessageToCatapult({
+					from: app.catapult.phoneNumber,
+					to: chat.phoneNumber,
+					text: ev.text
+				});
+			}
+		}
+	}
+}
 
 router.get('/slack/oauth2/callback', async ctx => {
 	const host = ctx.request.host;
