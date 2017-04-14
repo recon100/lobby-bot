@@ -42,6 +42,7 @@ async function main() {
 
 if (!module.parent) {
 	main().then(app => app.listen(process.env.PORT || 3000)).then(() => console.log('Ready'), console.trace);
+	setInterval(() => models.PrivateChat.closeInactiveChats().catch(err => console.error(err.message)), 600000);
 }
 
 module.exports = main;

@@ -98,6 +98,8 @@ const PrivateChatSchema = new mongoose.Schema({
 	lastMessageTime: {type: Date, index: true}
 });
 
+let PrivateChat = null;
+
 PrivateChatSchema.methods.sendIncomingMessage = async function (message) {
 	if (!this.application.slack) {
 		this.application = await Application.findById(this.application);
@@ -106,8 +108,22 @@ PrivateChatSchema.methods.sendIncomingMessage = async function (message) {
 		Object.assign({channel: this.channel.id, username: this.phoneNumber}, message));
 };
 
+PrivateChatSchema.statics.closeInactiveChats = function () {
+	// Close private chat if it doesn't have new messages more than 2 hours
+	return PrivateChat.collection.update({
+		state: 'opened',
+		lastMessageTime: {$gt: new Date(Date.now() - (2 * 3600000))}
+	}, {
+		$set: {
+			state: 'closed'
+		}
+	});
+};
+
+PrivateChat = mongoose.model('PrivateChat', PrivateChatSchema);
+
 module.exports = {
 	Application,
 	SlackOAuthSession: mongoose.model('SlackOAuthSession', SlackOAuthSessionSchema),
-	PrivateChat: mongoose.model('PrivateChat', PrivateChatSchema)
+	PrivateChat
 };
