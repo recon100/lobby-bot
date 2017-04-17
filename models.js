@@ -53,7 +53,6 @@ ApplicationSchema.statics.createApplication = async function (host, userId, apiT
 	let phoneNumber = ((await api.PhoneNumber.list({size: 1000, applicationId})).phoneNumbers)[0];
 	if (!phoneNumber) {
 		debug('Reserving service phone number');
-		console.log('local', {areaCode: '910', quantity: 1});
 		phoneNumber = (await api.AvailableNumber.searchAndOrder('local', {areaCode: '910', quantity: 1}))[0];
 		await api.PhoneNumber.update(phoneNumber.id, {applicationId});
 	}
@@ -71,9 +70,6 @@ ApplicationSchema.statics.createApplication = async function (host, userId, apiT
 };
 
 ApplicationSchema.methods.sendMessageToSlack = function (message) {
-	console.log(slack);
-	console.log(Object.assign({channel: this.slack.channel}, message));
-	console.log(this.slack.token);
 	return slack('chat.postMessage', this.slack.token,
 		Object.assign({channel: this.slack.channel}, message));
 };
