@@ -77,7 +77,7 @@ Now this bot is ready to work.
 Open in browser next link (replace `SLACK_CLIENT_ID` by your Slack App client id)
 
 ```
-https://slack.com/oauth/pick?scope=incoming-webhook%2Ccommands%2Cchat:write:bot%2Cgroups:read%2Cgroups:write%2Cgroups:history&client_id==SLACK_CLIENT_ID
+https://slack.com/oauth/pick?scope=incoming-webhook%2Ccommands%2Cchat:write:bot%2Cgroups:read%2Cgroups:write%2Cgroups:history&client_id=SLACK_CLIENT_ID
 ```
 
 Select team where you would like to use this application. On next page select channel (it should be private) for incoming messages from users.
