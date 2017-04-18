@@ -12,7 +12,7 @@
 	"scripts": {
 		"start": "node --harmony index.js",
 		"lint": "xo",
-		"test": "npm run lint && ava"
+		"test": "node --harmony node_modules/ava/cli.js"
 	},
 	"xo": {
 		"esnext": true,

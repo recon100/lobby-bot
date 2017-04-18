@@ -31,7 +31,6 @@ const ApplicationSchema = new mongoose.Schema({
 
 let Application = null;
 
-
 ApplicationSchema.statics.createApplication = async function (host, userId, apiToken, apiSecret, slack) {
 	const app = new Application();
 	app.host = host;
