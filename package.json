@@ -39,6 +39,9 @@
 			"import/resolver": "node"
 		}
 	},
+	"ava": {
+		"files": ["test/**/*.test.js"]
+	},
 	"devDependencies": {
 		"ava": "^0.19",
 		"cross-env": "^4.0",
