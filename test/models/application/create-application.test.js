@@ -61,7 +61,7 @@ test.serial('createApplication() should use existing Catapult application if it 
 		},
 		host: 'localhost'
 	};
-	await models.Application.createApplication('localhost', 'userId', 'token', 'secret', {
+	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret'}, {
 		access_token: 'accessToken',
 		team_name: 'teamName',
 		team_id: 'teamId',
@@ -105,7 +105,7 @@ test.serial('createApplication() should create a Catapult application if need', 
 		},
 		host: 'localhost'
 	};
-	await models.Application.createApplication('localhost', 'userId', 'token', 'secret', {
+	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret'}, {
 		access_token: 'accessToken',
 		team_name: 'teamName',
 		team_id: 'teamId',
@@ -132,7 +132,7 @@ test.serial('createApplication() should reserve a new phone number if need', asy
 	td.when(mockCatapult.PhoneNumber.list({size: 1000, applicationId: 'appId2'})).thenResolve({
 		phoneNumbers: []
 	});
-	td.when(mockCatapult.AvailableNumber.searchAndOrder('local', {areaCode: '910', quantity: 1})).thenResolve([{
+	td.when(mockCatapult.AvailableNumber.searchAndOrder('local', {state: 'state', city: 'city', quantity: 1})).thenResolve([{
 		id: 'numberId',
 		number: '+1134567893'
 	}]);
@@ -154,7 +154,13 @@ test.serial('createApplication() should reserve a new phone number if need', asy
 		},
 		host: 'localhost'
 	};
-	await models.Application.createApplication('localhost', 'userId', 'token', 'secret', {
+	await models.Application.createApplication('localhost', {
+		userId: 'userId',
+		token: 'token',
+		secret: 'secret',
+		state: 'state',
+		city: 'city'
+	}, {
 		access_token: 'accessToken',
 		team_name: 'teamName',
 		team_id: 'teamId',

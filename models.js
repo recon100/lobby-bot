@@ -31,7 +31,7 @@ const ApplicationSchema = new mongoose.Schema({
 
 let Application = null;
 
-ApplicationSchema.statics.createApplication = async function (host, userId, apiToken, apiSecret, slack) {
+ApplicationSchema.statics.createApplication = async function (host, {userId, apiToken, apiSecret, state, city}, slack) {
 	const app = new Application();
 	app.host = host;
 	app.catapult = {userId, apiToken, apiSecret};
@@ -52,7 +52,7 @@ ApplicationSchema.statics.createApplication = async function (host, userId, apiT
 	let phoneNumber = ((await api.PhoneNumber.list({size: 1000, applicationId})).phoneNumbers)[0];
 	if (!phoneNumber) {
 		debug('Reserving service phone number');
-		phoneNumber = (await api.AvailableNumber.searchAndOrder('local', {areaCode: '910', quantity: 1}))[0];
+		phoneNumber = (await api.AvailableNumber.searchAndOrder('local', {state, city, quantity: 1}))[0];
 		await api.PhoneNumber.update(phoneNumber.id, {applicationId});
 	}
 	app.catapult.phoneNumber = phoneNumber.number;

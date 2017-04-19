@@ -214,7 +214,7 @@ router.post('/catapult/auth', async ctx => {
 	const slack = await getSlackOAuthSessionData(ctx);
 	const form = ctx.request.body;
 	try {
-		const app = await ctx.models.Application.createApplication(ctx.request.host, form.userId, form.apiToken, form.apiSecret, slack);
+		const app = await ctx.models.Application.createApplication(ctx.request.host, form, slack);
 		ctx.cookies.set('teamId', app.slack.teamId, {signed: true});
 		ctx.redirect('/');
 	} catch (err) {

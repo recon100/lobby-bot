@@ -1,11 +1,14 @@
 extends layout.pug
 block content
-	h1 Catapult Authorization Data
+	h1 Almost Done
 	if error
 		.error #{error}
 	- formData = formData || {};
 	form(action='/catapult/auth', method='POST').pure-form.pure-form-stacked
 		fieldset
+			h4 Catapult Authorization Data
+			.alert
+				span These data will be used to reserve new phone number and handle incoming/outcoming messages on it
 			label(for='userId') User Id
 			input(type='text', name='userId', required, value=formData.userId).pure-u-1
 			label(for='apiToken') Api Token
@@ -13,6 +16,12 @@ block content
 			label(for='apiSecret') Api Secret
 			input(type='text', name='apiSecret', required, value=formData.apiSecret).pure-u-1
 			input(type='hidden', name='sid', value=formData.sid)
+			h4 Phone number options
+			.alert
+				span This number will be used to send/receive messages
+			label(for='state') State (like NC)
+			input(type='text', name='state', required, value=formData.state).pure-u-1
+			label(for='city') City (like Cary)
+			input(type='text', name='city', required, value=formData.city).pure-u-1
 			button.pure-button.pure-button-primary(type='submit') Save
-	.alert
-		span These data will be used to reserve new phone number and handle incoming/outcoming messages on it
+
