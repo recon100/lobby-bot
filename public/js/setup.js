@@ -54,7 +54,7 @@ new Vue({
 	el: '#app',
 	data: store,
 	components: Object.assign(
-		components(['home', 'slackConsole', 'createApp', 'oauth2Data', 'interactiveMessages']),	{
+		components(['home', 'slackConsole', 'createApp', 'oauth2Data', 'interactiveMessages', 'slashCommands']),	{
 			oauth2Data: component('oauth2Data', {
 				clientId: null,
 				clientSecret: null,

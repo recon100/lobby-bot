@@ -43,7 +43,18 @@ block scripts
 			p.code {{store.url('/messageActions')}}
 			p Press "Enable Interactive Messages"
 			s-image(name='interactive-messages2')
-			button(@click='go("")').pure-button.pure-button-primary Ok
+			button(@click='go("slashCommands")').pure-button.pure-button-primary Ok
+	script(type='text/x-template')#slashCommands
+		div
+			p Click on "Slash Commands" and create new command.
+			s-image(name='slash-commands')
+			p Set to field "Request URL" value
+			p.code {{store.url('/commands')}}
+			p Other fields values are shown on the picture. Press button "Save".
+			s-image(name='slash-commands2')
+			button(@click='go("")').pure-button.pure-button-primary Done
+
+
 
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.js')
 	script(src='/js/setup.js')
