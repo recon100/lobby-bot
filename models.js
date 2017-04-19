@@ -23,7 +23,8 @@ const ApplicationSchema = new mongoose.Schema({
 			teamName: {type: String, required: true},
 			teamId: {type: String, required: true, index: true},
 			channel: {type: String, required: true},
-			userId: {type: String, required: true}
+			userId: {type: String, required: true},
+			applicationId: {type: String, required: true}
 		}, required: true
 	},
 	host: {type: String, required: true}
@@ -61,7 +62,8 @@ ApplicationSchema.statics.createApplication = async function (host, {userId, api
 		teamName: slack.team_name,
 		teamId: slack.team_id,
 		channel: slack.incoming_webhook.channel,
-		userId: slack.user_id
+		userId: slack.user_id,
+		applicationId: slack.id
 	};
 	await Application.collection.remove({'catapult.applicationId': applicationId});
 	await app.save();
@@ -126,8 +128,15 @@ PrivateChatSchema.statics.closeInactiveChats = function () {
 
 PrivateChat = mongoose.model('PrivateChat', PrivateChatSchema);
 
+const SlackApplicationSchema = new mongoose.Schema({
+	clientId: {type: String, required: true},
+	clientSecret: {type: String, required: true},
+	verificationToken: {type: String}
+});
+
 module.exports = {
 	Application,
 	SlackOAuthSession: mongoose.model('SlackOAuthSession', SlackOAuthSessionSchema),
-	PrivateChat
+	PrivateChat,
+	SlackApplication: mongoose.model('SlackApplication', SlackApplicationSchema)
 };

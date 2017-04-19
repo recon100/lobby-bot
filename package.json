@@ -40,7 +40,9 @@
 		}
 	},
 	"ava": {
-		"files": ["test/**/*.test.js"]
+		"files": [
+			"test/**/*.test.js"
+		]
 	},
 	"devDependencies": {
 		"ava": "^0.19",
@@ -54,6 +56,7 @@
 		"koa": "^2.0",
 		"koa-body": "^2.0",
 		"koa-router": "^7.0",
+		"koa-static": "^3.0.0",
 		"koa-views": "^5.2",
 		"mongoose": "^4.8",
 		"node-bandwidth": "^2.3",

@@ -1,0 +1,49 @@
+extends layout.pug
+
+block content
+	#app
+		component(:is='currentView')
+
+block scripts
+	script(type='text/x-template')#home
+		div
+			p Hi! Welcome to Bandwidth Slack integration.
+			p Lets get started!
+			button(@click='go("slackConsole")').pure-button.pure-button-primary Go
+	script(type='text/x-template')#slackConsole
+		div
+			p= 'Go to '
+				a(href='https://api.slack.com/apps', target='_blank') Slack App Console
+			p Authorize there if need.
+			button(@click='go("createApp")').pure-button.pure-button-primary Ok
+	script(type='text/x-template')#createApp
+		div
+			p Create new application there.
+			s-image(name='create-slack-app')
+			p Use any name you like and assign the app to your team. Press "Create App".
+			s-image(name='create-slack-app2')
+			button(@click='go("oauth2Data")').pure-button.pure-button-primary Ready
+	script(type='text/x-template')#oauth2Data
+		div
+			p Scroll to section "App Credentials".
+			s-image(name='oauth2-data')
+			p Fill next fields by auth data.
+			form(@submit.prevent='save()').pure-form.pure-form-stacked
+				fieldset
+					label Client Id
+					input(type='text', v-model='clientId', required).pure-u-1
+					label Client Secret
+					input(type='password', v-model='clientSecret', required).pure-u-1
+					button.pure-button.pure-button-primary(type='submit') Done
+	script(type='text/x-template')#interactiveMessages
+		div
+			p Click on "Interactive Messages" and enable them.
+			s-image(name='interactive-messages')
+			p Set to field "Request URL" value
+			p.code {{store.url('/messageActions')}}
+			p Press "Enable Interactive Messages"
+			s-image(name='interactive-messages2')
+			button(@click='go("")').pure-button.pure-button-primary Ok
+
+	script(src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.js')
+	script(src='/js/setup.js')

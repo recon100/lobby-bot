@@ -11,6 +11,18 @@ async function getSlackOAuthSessionData(ctx) {
 	return session.data;
 }
 
+async function slackVerificationTokenMiddleware(ctx, next) {
+	const slackApp = await ctx.models.SlackApplication.findById(ctx.params.id);
+	if (!slackApp) {
+		return ctx.throw(404);
+	}
+	if (ctx.request.body.token !== slackApp.verificationToken) {
+		debug(`Invalid token value ${ctx.request.body.token} (estimated ${slackApp.verificationToken})`);
+		return;
+	}
+	await next();
+}
+
 async function slackMiddleware(ctx, next) {
 	let data = ctx.request.body;
 	if (ctx.request.is('application/x-www-form-urlencoded') && data.payload) {
@@ -18,10 +30,6 @@ async function slackMiddleware(ctx, next) {
 	}
 	debug(data);
 	ctx.body = '';
-	if (data.token !== ctx.slackAuth.verificationToken) {
-		debug(`Invalid token value ${data.token} (estimated ${ctx.slackAuth.verificationToken})`);
-		return;
-	}
 	ctx.sendResponse = r => superagent.post(data.response_url).send(r).type('json');
 	const teamId = data.team_id || data.team.id;
 	const app = await ctx.models.Application.findOne({'slack.teamId': teamId});
@@ -92,7 +100,7 @@ router.post('/callback', async ctx => {
 	}
 });
 
-router.post('/slack/messageActions', slackMiddleware, async ctx => {
+router.post('/slack/:id/messageActions', slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
 	const app = ctx.application;
 	ctx.runAsync(async () => {
 		if (ctx.data.callback_id === 'chat') {
@@ -129,7 +137,7 @@ router.post('/slack/messageActions', slackMiddleware, async ctx => {
 	});
 });
 
-router.post('/slack/commands', slackMiddleware, async ctx => {
+router.post('/slack/:id/commands', slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
 	const data = ctx.request.body;
 	const app = ctx.application;
 	ctx.runAsync(async () => {
@@ -147,14 +155,10 @@ router.post('/slack/commands', slackMiddleware, async ctx => {
 	});
 });
 
-router.post('/slack/events', async ctx => {
+router.post('/slack/:id/events', slackVerificationTokenMiddleware, async ctx => {
 	const data = ctx.request.body;
 	switch (data.type) {
 		case 'url_verification': {
-			if (data.token !== ctx.slackAuth.verificationToken) {
-				debug(`Invalid token value ${data.token} (estimated ${ctx.slackAuth.verificationToken})`);
-				return ctx.throw(404);
-			}
 			ctx.body = {challenge: data.challenge};
 			break;
 		}
@@ -188,18 +192,22 @@ async function handleSlackEvent(ev, ctx) {
 	}
 }
 
-router.get('/slack/oauth2/callback', async ctx => {
+router.get('/slack/:id/oauth2/callback', async ctx => {
+	const slackApp = await ctx.models.SlackApplication.findById(ctx.params.id);
+	if (!slackApp) {
+		return ctx.throw(404);
+	}
 	const host = ctx.request.host;
 	const code = ctx.request.query.code;
 	const data = {code};
-	data.client_id = ctx.slackAuth.clientId;
-	data.client_secret = ctx.slackAuth.clientSecret;
-	data.redirect_uri = `https://${host}/slack/oauth2/callback`;
+	data.client_id = slackApp.clientId;
+	data.client_secret = slackApp.clientSecret;
+	data.redirect_uri = `https://${host}/slack/${ctx.params.id}/oauth2/callback`;
 	const result = await superagent.get('https://slack.com/api/oauth.access').query(data);
 	if (result.body.error) {
 		return ctx.throw(400, result.body.error);
 	}
-	const sessionData = new ctx.models.SlackOAuthSession({data: result.body});
+	const sessionData = new ctx.models.SlackOAuthSession({data: Object.assign({id: ctx.params.id}, result.body)});
 	await sessionData.save();
 	ctx.status = 301;
 	ctx.redirect(`/catapult/auth?sid=${sessionData.id}`);
@@ -222,14 +230,41 @@ router.post('/catapult/auth', async ctx => {
 	}
 });
 
+router.post('/slack', async ctx => {
+	try {
+		console.log(ctx.request.body);
+		const app = new ctx.models.SlackApplication(ctx.request.body);
+		await app.save();
+		ctx.body = {id: app.id};
+	} catch (err) {
+		ctx.status = 400;
+		ctx.body = {error: err.message};
+	}
+});
+
+router.post('/slack/:id/verificationToken', async ctx => {
+	try {
+		const app = await ctx.models.SlackApplication.findById(ctx.params.id);
+		app.verificationToken = ctx.request.body.verificationToken;
+		await app.save();
+		ctx.body = {};
+	} catch (err) {
+		ctx.status = 400;
+		ctx.body = {error: err.message};
+	}
+});
+
 router.get('/', async ctx => {
 	const teamId = ctx.cookies.get('teamId', {signed: true});
+	const setup = () => ctx.render('setup', {title: 'Setup'});
 	if (!teamId) {
-		return ctx.throw(404);
+		await setup();
+		return;
 	}
 	const app = await ctx.models.Application.findOne({'slack.teamId': teamId});
 	if (!app) {
-		return ctx.throw(404);
+		await setup();
+		return;
 	}
 	await ctx.render('index', {
 		title: 'Phone number',
