@@ -52,7 +52,7 @@ Vue.component('s-image', {
 	template: `<img :src='"/img/" + name + ".png"' :alt='name' class='pure-img'>`
 });
 
-new Vue({
+new Vue({ // eslint-disable-line no-new
 	el: '#app',
 	data: store,
 	components: Object.assign(

@@ -19,6 +19,13 @@
 		"envs": [
 			"node"
 		],
+		"overrides": [
+			{
+				"files": "public/js/*.js",
+				"envs": ["browser"],
+				"globals": ["Vue"]
+			}
+		],
 		"rules": {
 			"camelcase": [
 				2,

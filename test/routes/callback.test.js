@@ -66,7 +66,6 @@ test('POST /callback should do nothing if application is not found', async t => 
 	t.pass();
 });
 
-
 test('POST /callback should handle incoming calls to service number', async t => {
 	const {context} = t;
 	context.method = 'POST';
@@ -117,7 +116,6 @@ test('POST /callback should hang up incoming calls to service number', async t =
 	await routes(context, null);
 	t.pass();
 });
-
 
 test('POST /callback should do nothing for other events', async t => {
 	const {context} = t;
