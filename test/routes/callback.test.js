@@ -9,7 +9,8 @@ test.beforeEach(t => {
 				findById: td.function()
 			},
 			Application: {
-				findOne: td.function()
+				findOne: td.function(),
+				findById: td.function()
 			}
 		},
 		render: td.function(),
@@ -65,13 +66,66 @@ test('POST /callback should do nothing if application is not found', async t => 
 	t.pass();
 });
 
-test('POST /callback should do nothing fo other events', async t => {
+
+test('POST /callback should handle incoming calls to service number', async t => {
 	const {context} = t;
 	context.method = 'POST';
 	context.path = '/callback';
 	context.request = {
 		body: {
 			eventType: 'answer',
+			from: '+1234567890',
+			to: '+1234567891',
+			callId: 'callId'
+		}
+	};
+	const mockApp = {
+		id: 'applicationId',
+		getCatapult: td.function()
+	};
+	const mockCall = {
+		playAudioAdvanced: td.function()
+	};
+	td.when(context.models.Application.findOne({'catapult.phoneNumber': '+1234567891'})).thenResolve(mockApp);
+	td.when(mockApp.getCatapult()).thenReturn({Call: mockCall});
+	td.when(mockCall.playAudioAdvanced('callId', td.matchers.contains({tag: 'applicationId'}))).thenResolve();
+	await routes(context, null);
+	t.pass();
+});
+
+test('POST /callback should hang up incoming calls to service number', async t => {
+	const {context} = t;
+	context.method = 'POST';
+	context.path = '/callback';
+	context.request = {
+		body: {
+			eventType: 'speak',
+			status: 'done',
+			tag: 'applicationId',
+			callId: 'callId'
+		}
+	};
+	const mockApp = {
+		getCatapult: td.function()
+	};
+	const mockCall = {
+		hangup: td.function()
+	};
+	td.when(context.models.Application.findById('applicationId')).thenResolve(mockApp);
+	td.when(mockApp.getCatapult()).thenReturn({Call: mockCall});
+	td.when(mockCall.hangup('callId')).thenResolve();
+	await routes(context, null);
+	t.pass();
+});
+
+
+test('POST /callback should do nothing for other events', async t => {
+	const {context} = t;
+	context.method = 'POST';
+	context.path = '/callback';
+	context.request = {
+		body: {
+			eventType: 'test',
 			from: '+1234567890',
 			to: '+1234567891'
 		}

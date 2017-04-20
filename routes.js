@@ -53,6 +53,27 @@ router.post('/callback', async ctx => {
 	ctx.body = '';
 	try {
 		switch (ev.eventType) {
+			case 'answer': {
+				const app = await ctx.models.Application.findOne({'catapult.phoneNumber': ev.to});
+				if (!app) {
+					return;
+				}
+				debug(`Number ${ev.from} called to ${ev.to}`);
+				await app.getCatapult().Call.playAudioAdvanced(ev.callId, {
+					sentence: 'Welcome to Slack bot. Please send an SMS to this number instead of voice call. Thank you.',
+					tag: app.id
+				});
+				break;
+			}
+			case 'speak': {
+				if (ev.status === 'done' && ev.tag) {
+					const app = await ctx.models.Application.findById(ev.tag);
+					if (app) {
+						await app.getCatapult().Call.hangup(ev.callId);
+					}
+				}
+				break;
+			}
 			case 'sms': {
 				if (ev.direction === 'in') {
 					const app = await ctx.models.Application.findOne({'catapult.phoneNumber': ev.to});

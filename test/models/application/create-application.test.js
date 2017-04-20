@@ -81,6 +81,7 @@ test.serial('createApplication() should create a Catapult application if need', 
 	td.when(mockCatapult.Application.create({
 		name: 'Lobby Slack Bot on  https://localhost',
 		incomingMessageUrl: 'https://localhost/callback',
+		incomingCallUrl: 'https://localhost/callback',
 		callbackHttpMethod: 'POST'
 	})).thenResolve({
 		id: 'appId1'
@@ -125,6 +126,7 @@ test.serial('createApplication() should reserve a new phone number if need', asy
 	td.when(mockCatapult.Application.create({
 		name: 'Lobby Slack Bot on  https://localhost',
 		incomingMessageUrl: 'https://localhost/callback',
+		incomingCallUrl: 'https://localhost/callback',
 		callbackHttpMethod: 'POST'
 	})).thenResolve({
 		id: 'appId2'

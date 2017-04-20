@@ -43,9 +43,11 @@ ApplicationSchema.statics.createApplication = async function (host, {userId, api
 		.filter(app => app.name === catapultApplicationName)[0] || {}).id;
 	if (!applicationId) {
 		debug('Creating new application on Catapult');
+		const callbackUrl = `${baseUrl}/callback`;
 		applicationId = (await api.Application.create({
 			name: catapultApplicationName,
-			incomingMessageUrl: `${baseUrl}/callback`,
+			incomingMessageUrl: callbackUrl,
+			incomingCallUrl: callbackUrl,
 			callbackHttpMethod: 'POST'
 		})).id;
 	}
