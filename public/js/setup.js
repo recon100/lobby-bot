@@ -1,5 +1,7 @@
 const store = {
 	id: null,
+	clientId: null,
+	permissions: ['commands', 'chat:write:bot', 'groups:read', 'groups:write', 'groups:history', 'incoming-webhook'],
 	currentView: 'home',
 	go(view) {
 		this.currentView = view;
@@ -47,14 +49,14 @@ function postJson(path, data) {
 
 Vue.component('s-image', {
 	props: ['name'],
-	template: `<img :src='"/img/" + name + ".png"' :alt='name'>`
+	template: `<img :src='"/img/" + name + ".png"' :alt='name' class='pure-img'>`
 });
 
 new Vue({
 	el: '#app',
 	data: store,
 	components: Object.assign(
-		components(['home', 'slackConsole', 'createApp', 'oauth2Data', 'interactiveMessages', 'slashCommands']),	{
+		components(['home', 'slackConsole', 'createApp', 'oauth2Data', 'interactiveMessages', 'slashCommands', 'oauth2RedirectUrl', 'permissions', 'events', 'finish']),	{
 			oauth2Data: component('oauth2Data', {
 				clientId: null,
 				clientSecret: null,
@@ -62,7 +64,17 @@ new Vue({
 					return postJson('/slack', {clientId: this.clientId, clientSecret: this.clientSecret})
 					.then(data => {
 						store.id = data.id;
+						store.clientId = this.clientId;
 						this.go('interactiveMessages');
+					});
+				}
+			}),
+			verificationToken: component('verificationToken', {
+				verificationToken: null,
+				save() {
+					return postJson(`/slack/${this.store.id}/verificationToken`, {verificationToken: this.verificationToken})
+					.then(() => {
+						this.go('events');
 					});
 				}
 			})

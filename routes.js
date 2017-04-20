@@ -232,7 +232,6 @@ router.post('/catapult/auth', async ctx => {
 
 router.post('/slack', async ctx => {
 	try {
-		console.log(ctx.request.body);
 		const app = new ctx.models.SlackApplication(ctx.request.body);
 		await app.save();
 		ctx.body = {id: app.id};

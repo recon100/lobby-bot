@@ -1,60 +1,114 @@
-extends layout.pug
+html
+	head
+		title Lobby Slack Bot - #{title}
+		link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/pure/0.6.2/pure-min.css')
+		style(type='text/css').
+			body{margin-top: 20px;}
+			.code{
+				border: 1px solid lightgray;
+				padding: 4px;
+				background-color: #eeeeee;
+				font-size: 90%;
+				color: #222;
+			}
+			.error{color: red;}
+	body
+		.pure-g
+			.pure-u-1-6
+			.pure-u-2-3#app
+				component(:is='currentView')
+			.pure-u-1-6
+		script(type='text/x-template')#home
+			div
+				p Hi! Welcome to Bandwidth Slack integration.
+				p Lets get started!
+				button(@click='go("slackConsole")').pure-button.pure-button-primary Go
+		script(type='text/x-template')#slackConsole
+			div
+				p= 'Go to '
+					a(href='https://api.slack.com/apps', target='_blank') Slack App Console
+				p Sign in there if need.
+				button(@click='go("createApp")').pure-button.pure-button-primary Ok
+		script(type='text/x-template')#createApp
+			div
+				p Create new application there.
+				s-image(name='create-slack-app')
+				p Use any name you like and assign the app to your team. Press "Create App".
+				s-image(name='create-slack-app2')
+				button(@click='go("oauth2Data")').pure-button.pure-button-primary Ok
+		script(type='text/x-template')#oauth2Data
+			div
+				p Scroll to section "App Credentials".
+				s-image(name='oauth2-data')
+				p Fill next fields by auth data.
+				form(@submit.prevent='save()').pure-form.pure-form-stacked
+					fieldset
+						label Client Id
+						input(type='text', v-model='clientId', required).pure-u-1
+						label Client Secret
+						input(type='password', v-model='clientSecret', required).pure-u-1
+						button.pure-button.pure-button-primary(type='submit') Ok
+		script(type='text/x-template')#interactiveMessages
+			div
+				p Click on "Interactive Messages" and enable them.
+				s-image(name='interactive-messages')
+				p Set to field "Request URL" value
+				p.code {{store.url('/messageActions')}}
+				p Press "Enable Interactive Messages"
+				s-image(name='interactive-messages2')
+				button(@click='go("slashCommands")').pure-button.pure-button-primary Ok
+		script(type='text/x-template')#slashCommands
+			div
+				p Click on "Slash Commands" and create new command.
+				s-image(name='slash-commands')
+				p Set to field "Request URL" value
+				p.code {{store.url('/commands')}}
+				p Other fields values are shown on the picture. Press button "Save".
+				s-image(name='slash-commands2')
+				button(@click='go("oauth2RedirectUrl")').pure-button.pure-button-primary Ok
+		script(type='text/x-template')#oauth2RedirectUrl
+			div
+				p Click on "OAuth &amp; Permissions" and add next url to list "Redirect URLs". Press button "Save URLs".
+				p.code {{store.url('/oauth2/callback')}}
+				s-image(name='redirect-urls')
+				button(@click='go("permissions")').pure-button.pure-button-primary Ok
 
-block content
-	#app
-		component(:is='currentView')
+		script(type='text/x-template')#permissions
+			div
+				p Scroll down to section "Permission Scopes". Add next permissions.
+				p.code {{store.permissions.join(', ')}}
+				p Press "Save Changes".
+				s-image(name='permissions')
+				button(@click='go("verificationToken")').pure-button.pure-button-primary Ok
 
-block scripts
-	script(type='text/x-template')#home
-		div
-			p Hi! Welcome to Bandwidth Slack integration.
-			p Lets get started!
-			button(@click='go("slackConsole")').pure-button.pure-button-primary Go
-	script(type='text/x-template')#slackConsole
-		div
-			p= 'Go to '
-				a(href='https://api.slack.com/apps', target='_blank') Slack App Console
-			p Authorize there if need.
-			button(@click='go("createApp")').pure-button.pure-button-primary Ok
-	script(type='text/x-template')#createApp
-		div
-			p Create new application there.
-			s-image(name='create-slack-app')
-			p Use any name you like and assign the app to your team. Press "Create App".
-			s-image(name='create-slack-app2')
-			button(@click='go("oauth2Data")').pure-button.pure-button-primary Ready
-	script(type='text/x-template')#oauth2Data
-		div
-			p Scroll to section "App Credentials".
-			s-image(name='oauth2-data')
-			p Fill next fields by auth data.
-			form(@submit.prevent='save()').pure-form.pure-form-stacked
-				fieldset
-					label Client Id
-					input(type='text', v-model='clientId', required).pure-u-1
-					label Client Secret
-					input(type='password', v-model='clientSecret', required).pure-u-1
-					button.pure-button.pure-button-primary(type='submit') Done
-	script(type='text/x-template')#interactiveMessages
-		div
-			p Click on "Interactive Messages" and enable them.
-			s-image(name='interactive-messages')
-			p Set to field "Request URL" value
-			p.code {{store.url('/messageActions')}}
-			p Press "Enable Interactive Messages"
-			s-image(name='interactive-messages2')
-			button(@click='go("slashCommands")').pure-button.pure-button-primary Ok
-	script(type='text/x-template')#slashCommands
-		div
-			p Click on "Slash Commands" and create new command.
-			s-image(name='slash-commands')
-			p Set to field "Request URL" value
-			p.code {{store.url('/commands')}}
-			p Other fields values are shown on the picture. Press button "Save".
-			s-image(name='slash-commands2')
-			button(@click='go("")').pure-button.pure-button-primary Done
+		script(type='text/x-template')#verificationToken
+			div
+				p Click on "Basic Information" and scroll to section "App Credentials" again.
+				s-image(name='verification-token')
+				p Copy value of field "Verification Token" to next text box.
+				form(@submit.prevent='save()').pure-form.pure-form-stacked
+					fieldset
+						label Verification Token
+						input(type='text', v-model='verificationToken', required).pure-u-1
+						button.pure-button.pure-button-primary(type='submit') Ok
+
+		script(type='text/x-template')#events
+			div
+				p Click on "Event Subscriptions" and enable events.
+				s-image(name='events')
+				p Enter to "Request URL" value
+				p.code {{store.url('/events')}}
+				p Wait for verification passed. Press button "Add Team Event" and add event "message.groups" to list of events. Press "Save Changes".
+				s-image(name='events2')
+				button(@click='go("finish")').pure-button.pure-button-primary Ok
+
+		script(type='text/x-template')#finish
+			div
+				p Congratulations! You did it! Now the bot is ready to use.
+				p= 'Use '
+					a(:href='"https://slack.com/oauth/pick?scope=incoming-webhook%2Ccommands%2Cchat:write:bot%2Cgroups:read%2Cgroups:write%2Cgroups:history&client_id=" + store.clientId') next link
+					span= ' to add the bot to your Slack Team.'
 
 
-
-	script(src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.js')
-	script(src='/js/setup.js')
+		script(src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.js')
+		script(src='/js/setup.js')
