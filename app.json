@@ -6,17 +6,5 @@
 	"keywords": ["js", "node", "bandwidth", "catapult", "slack"],
 	"addons": ["mongolab:sandbox"],
 	"env": {
-		"SLACK_CLIENT_ID": {
-			"description": "Your Slack app client id"
-		},
-		"SLACK_CLIENT_SECRET": {
-			"description": "Your Slack app client secret"
-		},
-		"SLACK_VERIFICATION_TOKEN": {
-			"description": "Your Slack token for webhook verification"
-		},
-		"NODE_ENV": {
-			"value": "production"
-		}
 	}
 }
