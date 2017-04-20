@@ -24,37 +24,6 @@ yarn install
 
 ```
 
-Go to [Slack Apps console](https://api.slack.com/apps) and create new Slack application. Switch to `Basic information` and select `Interactive messages` on section `Add features and functionality`.
-
-![features](/images/1.png)
-
-Fill there `Request Url` by value https://<your-host>/slack/messageActions. Press `Save changes`.
-
-![message actions](/images/2.png)
-
-Go to tab `Slash commands` and new command `/complete` as shown on picture (`Request Url` should be https://<your-host>/slack/commands). Press `Save` after that.
-
-![command](/images/3.png)
-
-Go to tab `OAuth & Permissions` and add https://<your-host>/slack/oauth2/callback to Redirect URLs. Press `Save Urls`.
-
-![oauth2](/images/5.png)
-
-Add permission scopes `commands`, `chat:write:bot`, `groups:read`, `groups:write`, `groups:history` and `incoming-webhook`.  Press `Save changes`.
-
-![scopes](/images/6.png)
-
-Switch to `Basic information` and copy from from App Credentials: Client ID, CLient Secret and Verification Token. Fill environment variables `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` and `SLACK_VERIFICATION_TOKEN` by these values.
-
-
-![credentials](/images/7.png)
-
-```bash
-export SLACK_CLIENT_ID = <your-slack-app-client-id>
-export SLACK_CLIENT_SECRET = <your-slack-app-client-secret>
-export SLACK_VERIFICATION_TOKEN = <your-slack-app-verification-token> 
-```
-
 Run the app by
 
 ```bash
@@ -65,12 +34,10 @@ npm start
 PORT=3000 docker-compose up -d # web app will be available on port 3000
 ```
 
-Configure port forwarding to open external access if need (like `ngrok http 3000`). Switch back to the browser. Go to tab `Event Subscriptions` tune on events. Fill `Request URL` by https://<your-host>/slack/events (to pass url validation this app is required to be started) and subscribe to event `message.groups`. Press `Save changes`
+Configure port forwarding to open external access if need (like `ngrok http 3000`).
 
-![event](/images/4.png)
+Open this web app in browser and follow instructions to configure Slack part.
 
-
-Now this bot is ready to work.
 
 ### Add bot to your team
 
