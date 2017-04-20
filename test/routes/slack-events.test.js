@@ -10,10 +10,10 @@ test.beforeEach(t => {
 			},
 			PrivateChat: {
 				findOne: td.function()
+			},
+			SlackApplication: {
+				findById: td.function()
 			}
-		},
-		slackAuth: {
-			verificationToken: 'token'
 		},
 		mockSendMessageToCatapult: td.function()
 	};
@@ -36,12 +36,15 @@ test.beforeEach(t => {
 		host: 'localhost',
 		sendMessageToCatapult: t.context.mockSendMessageToCatapult
 	});
+	td.when(t.context.models.SlackApplication.findById('id')).thenResolve({
+		verificationToken: 'token'
+	});
 });
 
 test('POST /slack/events should pass url verification', async t => {
 	const {context} = t;
 	context.method = 'POST';
-	context.path = '/slack/events';
+	context.path = '/slack/id/events';
 	context.request = {
 		is: () => false,
 		body: {
@@ -61,7 +64,7 @@ test('POST /slack/events should pass url verification', async t => {
 test('POST /slack/events should send SMS back to user', async t => {
 	const {context} = t;
 	context.method = 'POST';
-	context.path = '/slack/events';
+	context.path = '/slack/id/events';
 	context.request = {
 		is: () => false,
 		body: {

@@ -12,10 +12,10 @@ test.beforeEach(t => {
 			Application: {
 				findOne: td.function()
 			},
+			SlackApplication: {
+				findById: td.function()
+			},
 			PrivateChat: td.constructor(['save'])
-		},
-		slackAuth: {
-			verificationToken: 'token'
 		}
 	};
 	t.context.models.PrivateChat.findOne = td.function();
@@ -37,12 +37,15 @@ test.beforeEach(t => {
 		},
 		host: 'localhost'
 	});
+	td.when(t.context.models.SlackApplication.findById('id')).thenResolve({
+		verificationToken: 'token'
+	});
 });
 
-test('POST /slack/commands should handle command /complete', async t => {
+test('POST /slack/:id/commands should handle command /complete', async t => {
 	const {context} = t;
 	context.method = 'POST';
-	context.path = '/slack/commands';
+	context.path = '/slack/id/commands';
 	context.request = {
 		is: () => false,
 		body: {

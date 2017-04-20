@@ -30,13 +30,3 @@ test.serial('should run web app', async t => {
 		.expect(200);
 	t.pass();
 });
-
-test.serial('should fail if Slack auth data are missing', async t => {
-	process.env.SLACK_CLIENT_ID = '';
-	try {
-		await main();
-	} catch (err) {
-		return t.pass();
-	}
-	t.fail('Failed');
-});

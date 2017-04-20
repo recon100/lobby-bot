@@ -23,10 +23,10 @@ test.beforeEach(t => {
 				this.application = data.application;
 				this.phoneNumber = data.phoneNumber;
 				this.channel = data.channel;
-			})
-		},
-		slackAuth: {
-			verificationToken: 'token'
+			}),
+			SlackApplication: {
+				findById: td.function()
+			}
 		},
 		mockChatSave,
 		mockChatSendIncomingMessage
@@ -50,12 +50,15 @@ test.beforeEach(t => {
 		},
 		host: 'localhost'
 	});
+	td.when(t.context.models.SlackApplication.findById('id')).thenResolve({
+		verificationToken: 'token'
+	});
 });
 
 test('POST /slack/messageActions should handle "Answer" to incoming message', async t => {
 	const {context} = t;
 	context.method = 'POST';
-	context.path = '/slack/messageActions';
+	context.path = '/slack/id/messageActions';
 	context.request = {
 		is: () => false,
 		body: {
