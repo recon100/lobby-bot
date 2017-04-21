@@ -21,7 +21,7 @@ const ApplicationSchema = new mongoose.Schema({
 		type: {
 			token: {type: String, required: true, index: true},
 			teamName: {type: String, required: true},
-			teamId: {type: String, required: true, index: true},
+			teamId: {type: String, required: true, index: true, unique: true},
 			channel: {type: String, required: true},
 			userId: {type: String, required: true},
 			applicationId: {type: String, required: true}
@@ -52,12 +52,9 @@ ApplicationSchema.statics.createApplication = async function (host, {userId, api
 		})).id;
 	}
 	app.catapult.applicationId = applicationId;
-	let phoneNumber = ((await api.PhoneNumber.list({size: 1000, applicationId})).phoneNumbers)[0];
-	if (!phoneNumber) {
-		debug('Reserving service phone number');
-		phoneNumber = (await api.AvailableNumber.searchAndOrder('local', {state, city, quantity: 1}))[0];
-		await api.PhoneNumber.update(phoneNumber.id, {applicationId});
-	}
+	debug('Reserving service phone number');
+	const phoneNumber = (await api.AvailableNumber.searchAndOrder('local', {state, city, quantity: 1}))[0];
+	await api.PhoneNumber.update(phoneNumber.id, {applicationId});
 	app.catapult.phoneNumber = phoneNumber.number;
 	app.slack = {
 		token: slack.access_token,
@@ -67,7 +64,7 @@ ApplicationSchema.statics.createApplication = async function (host, {userId, api
 		userId: slack.user_id,
 		applicationId: slack.id
 	};
-	await Application.collection.remove({'catapult.applicationId': applicationId});
+	await Application.collection.remove({'slack.teamId': slack.team_id});
 	await app.save();
 	return app;
 };
@@ -131,7 +128,7 @@ PrivateChatSchema.statics.closeInactiveChats = function () {
 PrivateChat = mongoose.model('PrivateChat', PrivateChatSchema);
 
 const SlackApplicationSchema = new mongoose.Schema({
-	clientId: {type: String, required: true},
+	clientId: {type: String, required: true, unique: true},
 	clientSecret: {type: String, required: true},
 	verificationToken: {type: String}
 });

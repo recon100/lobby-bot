@@ -11,7 +11,6 @@ const mockCatapult = {
 		}
 	},
 	PhoneNumber: {
-		list: td.function(),
 		update: td.function()
 	},
 	AvailableNumber: {
@@ -40,10 +39,11 @@ test.serial('createApplication() should use existing Catapult application if it 
 	td.when(mockCatapult.Application.list({size: 1000})).thenResolve({
 		applications: [{id: 'appId', name: 'Lobby Slack Bot on  https://localhost'}]
 	});
-	td.when(mockCatapult.Application.collection.remove({'catapult.applicationId': 'appId'})).thenResolve();
-	td.when(mockCatapult.PhoneNumber.list({size: 1000, applicationId: 'appId'})).thenResolve({
-		phoneNumbers: [{number: '+1134567890'}]
-	});
+	td.when(mockCatapult.Application.collection.remove({'slack.teamId': 'teamId'})).thenResolve();
+	td.when(mockCatapult.AvailableNumber.searchAndOrder('local', {state: 'state', city: 'city', quantity: 1})).thenResolve([{
+		id: 'numberId',
+		number: '+1134567899'
+	}]);
 	dataToCompare = {
 		slack: {
 			token: 'accessToken',
@@ -57,11 +57,11 @@ test.serial('createApplication() should use existing Catapult application if it 
 			apiToken: 'token',
 			apiSecret: 'secret',
 			applicationId: 'appId',
-			phoneNumber: '+1134567890'
+			phoneNumber: '+1134567899'
 		},
 		host: 'localhost'
 	};
-	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret'}, {
+	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret', city: 'city', state: 'state'}, {
 		access_token: 'accessToken',
 		team_name: 'teamName',
 		team_id: 'teamId',
@@ -86,9 +86,10 @@ test.serial('createApplication() should create a Catapult application if need', 
 	})).thenResolve({
 		id: 'appId1'
 	});
-	td.when(mockCatapult.PhoneNumber.list({size: 1000, applicationId: 'appId1'})).thenResolve({
-		phoneNumbers: [{number: '+1134567890'}]
-	});
+	td.when(mockCatapult.AvailableNumber.searchAndOrder('local', {state: 'state', city: 'city', quantity: 1})).thenResolve([{
+		id: 'numberId',
+		number: '+1134567890'
+	}]);
 	dataToCompare = {
 		slack: {
 			token: 'accessToken',
@@ -106,7 +107,7 @@ test.serial('createApplication() should create a Catapult application if need', 
 		},
 		host: 'localhost'
 	};
-	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret'}, {
+	await models.Application.createApplication('localhost', {userId: 'userId', token: 'token', secret: 'secret', city: 'city', state: 'state'}, {
 		access_token: 'accessToken',
 		team_name: 'teamName',
 		team_id: 'teamId',
@@ -119,7 +120,7 @@ test.serial('createApplication() should create a Catapult application if need', 
 	t.pass();
 });
 
-test.serial('createApplication() should reserve a new phone number if need', async t => {
+test.serial('createApplication() should reserve a new phone number', async t => {
 	td.when(mockCatapult.Application.list({size: 1000})).thenResolve({
 		applications: []
 	});
@@ -130,9 +131,6 @@ test.serial('createApplication() should reserve a new phone number if need', asy
 		callbackHttpMethod: 'POST'
 	})).thenResolve({
 		id: 'appId2'
-	});
-	td.when(mockCatapult.PhoneNumber.list({size: 1000, applicationId: 'appId2'})).thenResolve({
-		phoneNumbers: []
 	});
 	td.when(mockCatapult.AvailableNumber.searchAndOrder('local', {state: 'state', city: 'city', quantity: 1})).thenResolve([{
 		id: 'numberId',

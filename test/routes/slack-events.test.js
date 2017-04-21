@@ -46,15 +46,17 @@ test('POST /slack/events should pass url verification', async t => {
 	context.method = 'POST';
 	context.path = '/slack/id/events';
 	context.request = {
-		is: () => false,
+		is: () => true,
 		body: {
-			team_id: 'teamId',
-			text: '',
-			token: 'token',
-			response_url: 'url1',
-			channel_id: 'channelId1',
-			type: 'url_verification',
-			challenge: '1234'
+			payload: JSON.stringify({
+				team_id: 'teamId',
+				text: '',
+				token: 'token',
+				response_url: 'url1',
+				channel_id: 'channelId1',
+				type: 'url_verification',
+				challenge: '1234'
+			})
 		}
 	};
 	await routes(context, null);

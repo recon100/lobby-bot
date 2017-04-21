@@ -5,6 +5,14 @@ const slack = require('./slack');
 
 const router = new Router();
 
+async function slackPayload(ctx, next) {
+	const data = ctx.request.body;
+	if (ctx.request.is('application/x-www-form-urlencoded') && data.payload) {
+		ctx.request.body = JSON.parse(data.payload);
+	}
+	return next();
+}
+
 async function getSlackOAuthSessionData(ctx) {
 	const sessionId = ctx.request.query.sid || ctx.request.body.sid;
 	const session = await ctx.models.SlackOAuthSession.findById(sessionId);
@@ -17,17 +25,14 @@ async function slackVerificationTokenMiddleware(ctx, next) {
 		return ctx.throw(404);
 	}
 	if (ctx.request.body.token !== slackApp.verificationToken) {
-		debug(`Invalid token value ${ctx.request.body.token} (estimated ${slackApp.verificationToken})`);
+		debug(`Invalid token value ${ctx.request.body.token} (estimated ${slackApp.verificationToken}) (path ${ctx.request.path})`);
 		return;
 	}
 	await next();
 }
 
 async function slackMiddleware(ctx, next) {
-	let data = ctx.request.body;
-	if (ctx.request.is('application/x-www-form-urlencoded') && data.payload) {
-		data = JSON.parse(data.payload);
-	}
+	const data = ctx.request.body;
 	debug(data);
 	ctx.body = '';
 	ctx.sendResponse = r => superagent.post(data.response_url).send(r).type('json');
@@ -85,6 +90,7 @@ router.post('/callback', async ctx => {
 					const chat = await ctx.models.PrivateChat.findOne({application: app.id, phoneNumber: ev.from, state: 'opened'});
 					if (chat) {
 						// Send message to private number's channel
+						debug('Sending a message to private number chat');
 						await chat.sendIncomingMessage({text: ev.text});
 					} else {
 						// Send message to common channel
@@ -107,6 +113,7 @@ router.post('/callback', async ctx => {
 								}
 							]
 						};
+						debug('Sending a message to common chat');
 						await app.sendMessageToSlack(message);
 					}
 				}
@@ -121,7 +128,7 @@ router.post('/callback', async ctx => {
 	}
 });
 
-router.post('/slack/:id/messageActions', slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
+router.post('/slack/:id/messageActions', slackPayload, slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
 	const app = ctx.application;
 	ctx.runAsync(async () => {
 		if (ctx.data.callback_id === 'chat') {
@@ -158,7 +165,7 @@ router.post('/slack/:id/messageActions', slackVerificationTokenMiddleware, slack
 	});
 });
 
-router.post('/slack/:id/commands', slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
+router.post('/slack/:id/commands', slackPayload, slackVerificationTokenMiddleware, slackMiddleware, async ctx => {
 	const data = ctx.request.body;
 	const app = ctx.application;
 	ctx.runAsync(async () => {
@@ -176,7 +183,7 @@ router.post('/slack/:id/commands', slackVerificationTokenMiddleware, slackMiddle
 	});
 });
 
-router.post('/slack/:id/events', slackVerificationTokenMiddleware, async ctx => {
+router.post('/slack/:id/events', slackPayload, slackVerificationTokenMiddleware, async ctx => {
 	const data = ctx.request.body;
 	switch (data.type) {
 		case 'url_verification': {
@@ -253,7 +260,12 @@ router.post('/catapult/auth', async ctx => {
 
 router.post('/slack', async ctx => {
 	try {
-		const app = new ctx.models.SlackApplication(ctx.request.body);
+		let app = await ctx.models.SlackApplication.findOne({clientId: ctx.request.body.clientId});
+		if (app) {
+			app.clientSecret = ctx.request.body.clientSecret;
+		} else {
+			app = new ctx.models.SlackApplication(ctx.request.body);
+		}
 		await app.save();
 		ctx.body = {id: app.id};
 	} catch (err) {
