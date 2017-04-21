@@ -68,11 +68,13 @@ test('POST /slack/messageActions should handle "Answer" to incoming message', as
 			],
 			token: 'token',
 			response_url: 'url1',
-			team: {id: 'teamId'}
+			team: {id: 'teamId'},
+			user: {id: 'userId'}
 		}
 	};
 	td.when(context.models.PrivateChat.findOne({application: 'applicationId', phoneNumber: '+1234567890'})).thenResolve(null);
 	td.when(mockSlack('groups.list', 'accessToken')).thenResolve({groups: []});
+	td.when(mockSlack('groups.invite', 'accessToken', {channel: 'groupId', user: 'userId'})).thenResolve();
 	td.when(mockSlack('groups.create', 'accessToken', {name: '1234567890'})).thenResolve({group: {id: 'groupId', name: '1234567890'}});
 	td.when(context.mockChatSave()).thenDo(function () {
 		t.is(this.application, 'applicationId');

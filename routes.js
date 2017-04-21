@@ -154,6 +154,13 @@ router.post('/slack/:id/messageActions', slackPayload, slackVerificationTokenMid
 			if (chat.state !== 'closed') {
 				throw new Error('Somebody is already talking with this number');
 			}
+			try {
+				debug(`Invite ${ctx.data.user.name} to private number chat`);
+				await slack('groups.invite', app.slack.token, {channel: chat.channel.id, user: ctx.data.user.id});
+			} catch (err) {
+				// ignore invite error
+				debug(`Invitation error: ${err.message}`);
+			}
 			chat.state = 'opened';
 			await chat.save();
 			await chat.sendIncomingMessage({text}); // Copy this message to private channel
