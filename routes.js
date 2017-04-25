@@ -64,10 +64,16 @@ router.post('/callback', async ctx => {
 					return;
 				}
 				debug(`Number ${ev.from} called to ${ev.to}`);
-				await app.getCatapult().Call.playAudioAdvanced(ev.callId, {
-					sentence: 'Welcome to Slack bot. Please send an SMS to this number instead of voice call. Thank you.',
-					tag: app.id
-				});
+				if (process.env.NUMBER_TO_TRANSFER) {
+					await app.getCatapult().Call.transfer(ev.callId, {
+						transferTo: process.env.NUMBER_TO_TRANSFER
+					});
+				} else {
+					await app.getCatapult().Call.playAudioAdvanced(ev.callId, {
+						sentence: 'Welcome to Slack bot. Please send an SMS to this number instead of voice call. Thank you.',
+						tag: app.id
+					});
+				}
 				break;
 			}
 			case 'speak': {

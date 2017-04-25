@@ -66,7 +66,7 @@ test('POST /callback should do nothing if application is not found', async t => 
 	t.pass();
 });
 
-test('POST /callback should handle incoming calls to service number', async t => {
+test.serial('POST /callback should handle incoming calls to service number', async t => {
 	const {context} = t;
 	context.method = 'POST';
 	context.path = '/callback';
@@ -89,6 +89,37 @@ test('POST /callback should handle incoming calls to service number', async t =>
 	td.when(mockApp.getCatapult()).thenReturn({Call: mockCall});
 	td.when(mockCall.playAudioAdvanced('callId', td.matchers.contains({tag: 'applicationId'}))).thenResolve();
 	await routes(context, null);
+	t.pass();
+});
+
+test.serial('POST /callback should transfer incoming calls if need', async t => {
+	const {context} = t;
+	context.method = 'POST';
+	context.path = '/callback';
+	context.request = {
+		body: {
+			eventType: 'answer',
+			from: '+1234567890',
+			to: '+1234567892',
+			callId: 'callId'
+		}
+	};
+	const mockApp = {
+		id: 'applicationId',
+		getCatapult: td.function()
+	};
+	const mockCall = {
+		transfer: td.function()
+	};
+	td.when(context.models.Application.findOne({'catapult.phoneNumber': '+1234567892'})).thenResolve(mockApp);
+	td.when(mockApp.getCatapult()).thenReturn({Call: mockCall});
+	td.when(mockCall.transfer('callId', {transferTo: '+1234567800'})).thenResolve();
+	try {
+		process.env.NUMBER_TO_TRANSFER = '+1234567800';
+		await routes(context, null);
+	} finally {
+		process.env.NUMBER_TO_TRANSFER = null;
+	}
 	t.pass();
 });
 
