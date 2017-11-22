@@ -1,11 +1,16 @@
-lobby-bot
-===========
+<div align="center">
+
+# Lobby Bot
+
+<a href="http://dev.bandwidth.com"><img src="https://s3.amazonaws.com/bwdemos/BW-VMP.png"/></a>
+</div>
+
+A demo bot which allows to use Bandwidth services inside Slack chat
 
 [![Build](https://travis-ci.org/BandwidthExamples/lobby-bot.png)](https://travis-ci.org/BandwidthExamples/lobby-bot)
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-A demo bot which allows to use Bandwidth services inside Slack chat
 
 Requirements:
 * Node 7.5+ and MongoDb 3.0+ OR Docker 1.10+ and Docker Compose
